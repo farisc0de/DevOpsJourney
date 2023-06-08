@@ -1,0 +1,34 @@
+# This workflow will build a .NET project and deploy to IIS using GitHub Self Hosted Runner
+
+name: .NET
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: self-hosted
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 3.1.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet publish --configuration "Release" --no-restore
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+    - name: Dploy
+      run: |
+        Stop-WebSite -Name simplemvc
+        Stop-WebAppPool -Name simplemvc
+        Copy-Item SimpleCrudMVC\bin\Release\netcoreapp3.1\publish\* -Destination C:\inetpub\wwwroot\simplecrud -Force -Recurse
+        Start-WebAppPool -Name simplemvc
+        Start-WebSite -Name simplemvc
